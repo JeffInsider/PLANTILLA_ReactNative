@@ -1,5 +1,6 @@
 import {Image, Text, View} from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
+import { styles } from '../theme/styles';
 
 interface Props {
   images: {publicId: string; url: string}[];
@@ -8,7 +9,7 @@ interface Props {
 
 export const ImageList = ({images}: Props) => {
   return (
-    <View style={{flex:1, padding: 10}}>
+    <View style={styles.container}>
       <FlatList 
       data={images}
       keyExtractor={item => item.publicId}

@@ -1,14 +1,21 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import {Button, Text, View} from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { RootStackParamList } from '../routes/Navigation';
+import { ImageUp } from '../components/ImageUp';
+import { styles } from '../theme/styles';
 
 interface Props extends StackScreenProps<RootStackParamList, 'Home'> {}
 
-export const HomeScreen = ({navigation}: Props) => {
+export const HomeScreen = ({ navigation }: Props) => {
   return (
-    <View>
-      <Button title="Tomar Foto" onPress={() => navigation.navigate('Camara')} />
-      <Button title="Ver Galería" onPress={() => navigation.navigate('ImageGallery')} />
+    <View style={styles.container}>
+      <View style={styles.topButtonContainer}>
+        <Button title="Ver Galería" onPress={() => navigation.navigate('ImageGallery')} />
+      </View>
+      <View style={styles.imageUpContainer}>
+        <ImageUp />
+      </View>
     </View>
   );
 };
+

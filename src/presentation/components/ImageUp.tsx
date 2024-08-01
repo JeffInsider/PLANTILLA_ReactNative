@@ -1,101 +1,88 @@
-import axios from 'axios';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Image, PermissionsAndroid, Platform, Text, View } from 'react-native';
-import { RNCamera } from 'react-native-camera';
+import React from 'react';
+import { View, Button, Image, StyleSheet, Alert, Pressable, Text } from 'react-native';
+import { launchCamera, launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { styles } from '../theme/styles';
 
+export const ImageUp = () => {
+  const [photo, setPhoto] = React.useState<string | null>(null);
 
-interface Props {
-  imageUp: () => void;
-}
-
-export const ImageUp = ({ imageUp }: Props) => {
-
-  const camaraRef = useRef<RNCamera>(null);
-  const [image, setImage] = useState<string | null>(null);
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
-
-  useEffect(() => {
-    const requestCameraPermission = async () => {
-      console.log("Requesting camera permission...");
-      if (Platform.OS === 'android') {
-        try {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.CAMERA,
-            {
-              title: "Permiso para usar la cámara",
-              message: "Esta aplicación necesita acceso a la cámara",
-              buttonNeutral: "Preguntar luego",
-              buttonNegative: "Cancelar",
-              buttonPositive: "Aceptar"
-            }
-          );
-          console.log("Camera permission granted: ", granted);
-          setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-        } catch (err) {
-          console.warn(err);
+  const checkPermissions = async () => {
+    try {
+      const cameraPermission = await check(PERMISSIONS.ANDROID.CAMERA);
+      if (cameraPermission !== RESULTS.GRANTED) {
+        const result = await request(PERMISSIONS.ANDROID.CAMERA);
+        if (result !== RESULTS.GRANTED) {
+          Alert.alert('Permiso de cámara', 'Se requiere permiso de cámara para tomar fotos.');
+          return false;
         }
-      } else {
-        // Suponiendo que los permisos de la cámara siempre se conceden en iOS
-        setHasPermission(true);
       }
-    };
 
-    requestCameraPermission();
-  }, []);
-
-  const takePicture = async () => {
-    if (camaraRef.current) {
-      const options = { quality: 0.5, base64: true };
-      const data = await camaraRef.current.takePictureAsync(options);
-      setImage(data.uri);
-    }
-  }
-
-  const uploadImage = async () => {
-    if (image) {
-      const formData = new FormData();
-      formData.append('file', {
-        name: 'image.jpg',
-        type: 'image/jpeg',
-        uri: image
-      });
-
-      try {
-        const response = await axios.post("https://localhost:7193/api/imagen", formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        if (response.status === 200) {
-          Alert.alert('Exito', 'Imagen subida correctamente');
-          imageUp();
-        } else {
-          Alert.alert('Error', 'No se pudo subir la imagen');
+      const storagePermission = await check(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
+      if (storagePermission !== RESULTS.GRANTED) {
+        const result = await request(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
+        if (result !== RESULTS.GRANTED) {
+          Alert.alert('Permiso de almacenamiento', 'Se requiere permiso de almacenamiento para guardar fotos.');
+          return false;
         }
-      } catch (error) {
-        Alert.alert('Error', "No se pudo subir la imagen");
       }
-    }
-  }
 
-  if (!hasPermission) {
-    return <View><Text>No se han concedido permisos para usar la cámara.</Text></View>;
-  }
+      return true;
+    } catch (error) {
+      console.error('Error al solicitar permisos:', error);
+      return false;
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const hasPermissions = await checkPermissions();
+    if (!hasPermissions) return;
+
+    launchCamera(
+      {
+        mediaType: 'photo',
+        includeBase64: false,
+        saveToPhotos: true,
+      },
+      (response: ImagePickerResponse) => {
+        if (response.errorCode) {
+          Alert.alert('Error de ImagePicker', response.errorMessage || 'Ocurrió un error');
+        } else if (response.assets) {
+          setPhoto(response.assets[0].uri || null);
+        }
+      }
+    );
+  };
+
+  const handleSelectPhoto = async () => {
+    const hasPermissions = await checkPermissions();
+    if (!hasPermissions) return;
+
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        includeBase64: false,
+      },
+      (response: ImagePickerResponse) => {
+        if (response.errorCode) {
+          Alert.alert('Error de ImagePicker', response.errorMessage || 'Ocurrió un error');
+        } else if (response.assets) {
+          setPhoto(response.assets[0].uri || null);
+        }
+      }
+    );
+  };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <RNCamera
-        style={{ width: '100%', height: '80%', borderWidth: 2, borderColor: 'red', }} // Agregar borde para ver si está renderizado
-        type={RNCamera.Constants.Type.back}
-        ref={camaraRef}
-      />
-      {image && (
-        <View style={{ margin: 10 }}>
-          <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />
-        </View>
-      )}
-      <Button title="Tomar Foto" onPress={takePicture} />
-      {image && <Button title="Subir Foto" onPress={uploadImage} />}
+    <View style={styles.container}>
+      <Pressable style={styles.button} onPress={handleTakePhoto}>
+        <Text style={styles.textButton}>Tomar Foto</Text>
+      </Pressable>
+      <Pressable style={styles.button} onPress={handleSelectPhoto}>
+        <Text style={styles.textButton}>Buscar en galeria</Text>
+      </Pressable>
+      {photo && <Image source={{ uri: photo }} style={styles.image} />}
     </View>
   );
 };
+
