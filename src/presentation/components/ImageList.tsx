@@ -9,17 +9,17 @@ interface Props {
 
 export const ImageList = ({images}: Props) => {
   return (
-    <View style={styles.container}>
       <FlatList 
       data={images}
       keyExtractor={item => item.publicId}
       renderItem={({item}) => (
-        <View style={{marginBottom:15, alignItems: 'center'}}>
-          <Image source={{uri: item.url}} style={{width:200, height:200, borderRadius:10}} />
-          <Text>{item.publicId}</Text>
+        <View style={styles.imageContainer}>
+          <Image source={{uri: item.url}} style={styles.image2} />
         </View>
       )}
+      numColumns={2}
+      //se agrega el key para que no de error al renderizar
+      key={(2).toString()}
       />
-    </View>
   );
 };

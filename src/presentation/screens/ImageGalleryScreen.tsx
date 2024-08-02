@@ -1,27 +1,43 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import {Text, View} from 'react-native';
+import { Button, Text, View } from 'react-native';
 import { RootStackParamList } from '../routes/Navigation';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ImageList } from '../components/ImageList';
+import { Pressable, ScrollView } from 'react-native-gesture-handler';
+import { styles } from '../theme/styles';
 
-interface Props extends StackScreenProps<RootStackParamList, 'ImageGallery'> {}
+interface Props extends StackScreenProps<RootStackParamList, 'ImageGallery'> { }
 
-export const ImageGallery = ({navigation}: Props) => {
-  const [images, setImages] = useState<{publicId: string; url: string}[]>([]);
+export const ImageGallery = ({ navigation }: Props) => {
+  const [images, setImages] = useState<{ publicId: string; url: string }[]>([]);
   const [load, setLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const getImages = async () => {
       try {
-        const response = await axios.get("https://localhost:7193/api/imagen");
-        const data = await response.data();
-        setImages(data);
+        const response = await axios.get("http://192.168.1.34:5088/api/imagen");
+        //solo para ver el contenido de la respuesta
+        //console.log('contenido del get:', response.data);
+        setImages(response.data);
         setLoad(false);
       } catch (error) {
-        setError('No se pudo cargar las imagenes');
-      }finally{
+        //console.log('El app entro aqui');
+        //console.log(error);
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error: ', {
+            message: error.message,
+            code: error.code,
+            config: error.config,
+            response: error.response
+          });
+          setError(`Error: ${error.message}`);
+        }else {
+          console.error('Otro error: ', error);
+          setError('Error desconocido');
+        }
+      } finally {
         setLoad(false);
       }
     }
@@ -29,7 +45,7 @@ export const ImageGallery = ({navigation}: Props) => {
   }, []);
 
   //comprobar si hay error
-  if(error){
+  if (error) {
     return (
       <View>
         <Text>{error}</Text>
@@ -38,8 +54,10 @@ export const ImageGallery = ({navigation}: Props) => {
   }
 
   return (
-    <View style={{flex: 1, padding: 10, backgroundColor:'#fff'}}>
-      <Text style={{fontSize:20, fontWeight:'bold', marginBottom: 10}}>Galería de Imágenes</Text>
+    <View style={styles.imageContainer}>
+      <Text style={styles.text}>Galería de Imágenes</Text>
+      <Button title="Volver" onPress={() => navigation.goBack()} />
+      <View style={{ borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 10,marginTop:10 }} />
       <ImageList images={images} />
     </View>
   );
